@@ -1,0 +1,20 @@
+# Core dependencies
+moviepy==2.2.1
+whisper-openai==20231117
+spellchecker==0.8.3
+
+# Audio processing
+pydub==0.25.1
+
+# Image processing
+opencv-python==4.11.0.86
+Pillow==11.3.0
+
+# Data processing
+numpy==2.2.6
+
+# Utilities
+tqdm==4.67.1
+python-dotenv==1.1.1
+requests==2.32.4
+ 
