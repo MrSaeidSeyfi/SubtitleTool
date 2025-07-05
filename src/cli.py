@@ -1,10 +1,10 @@
-
 import argparse
 import logging
 import sys
 from pathlib import Path
 from typing import Optional
 
+# Add project root to path for imports
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -13,6 +13,7 @@ from src.core.audio import AudioExtractor
 from src.core.transcription import Transcriber
 from src.core.validation import SubtitleValidator
 from src.core.rendering import SubtitleRenderer
+from src.core.speaker_diarization import SpeakerDiarizer
 from src.services.database import DatabaseManager
 from src.services.storage import StorageManager
 
@@ -27,6 +28,7 @@ class SubtitleToolCLI:
         self.transcriber = Transcriber()
         self.validator = SubtitleValidator()
         self.renderer = SubtitleRenderer()
+        self.diarizer = SpeakerDiarizer()
         self.db_manager = DatabaseManager()
         self.storage_manager = StorageManager()
     
@@ -34,7 +36,9 @@ class SubtitleToolCLI:
                      output_format: str = 'video',
                      subtitle_format: Optional[str] = None,
                      skip_validation: bool = False,
-                     skip_rendering: bool = False) -> None:
+                     skip_rendering: bool = False,
+                     enable_diarization: bool = True,
+                     n_speakers: Optional[int] = None) -> None:
         """
         Process video file to generate subtitles
         
@@ -44,6 +48,8 @@ class SubtitleToolCLI:
             subtitle_format: Subtitle file format ('srt', 'vtt', 'ass')
             skip_validation: Skip subtitle validation
             skip_rendering: Skip video rendering
+            enable_diarization: Enable speaker diarization
+            n_speakers: Number of speakers to detect
         """
         try:
             logger.info(f"Starting processing: {video_path}")
@@ -61,6 +67,19 @@ class SubtitleToolCLI:
                 # Transcribe audio
                 logger.info("Transcribing audio...")
                 subtitles = self.transcriber.transcribe(audio_path)
+                
+                # Speaker diarization
+                if enable_diarization and len(subtitles) > 0:
+                    logger.info("Performing speaker diarization...")
+                    if n_speakers:
+                        self.diarizer.n_speakers = n_speakers
+                    subtitles = self.diarizer.assign_speakers(audio_path, subtitles)
+                    
+                    # Show speaker statistics
+                    speaker_info = self.diarizer.get_speaker_info(subtitles)
+                    logger.info("Speaker diarization results:")
+                    for speaker_id, info in speaker_info.items():
+                        logger.info(f"  Speaker {speaker_id + 1} ({info['color']}): {info['segments']} segments, {info['total_duration']:.1f}s")
                 
                 # Validate and correct subtitles
                 if not skip_validation:
@@ -81,7 +100,7 @@ class SubtitleToolCLI:
                 if output_format in ['subtitle', 'both'] and subtitle_format:
                     logger.info(f"Generating subtitle file ({subtitle_format})...")
                     subtitle_path = self.renderer.render_subtitle_file(
-                        video_path, subtitles, subtitle_format
+                        video_path, subtitles, subtitle_format, include_speakers=enable_diarization
                     )
                     logger.info(f"Subtitle file created: {subtitle_path}")
                 
@@ -126,7 +145,9 @@ class SubtitleToolCLI:
             print(f"\nSubtitles matching '{query}':")
             print("-" * 80)
             for subtitle in subtitles:
-                print(f"{subtitle.start_time:>8.2f}s - {subtitle.end_time:>8.2f}s: {subtitle.text}")
+                speaker_label = subtitle.get_speaker_label()
+                speaker_info = f" [{speaker_label}]" if speaker_label else ""
+                print(f"{subtitle.start_time:>8.2f}s - {subtitle.end_time:>8.2f}s{speaker_info}: {subtitle.text}")
             
         except Exception as e:
             logger.error(f"Error searching subtitles: {e}")
@@ -168,13 +189,15 @@ class SubtitleToolCLI:
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
-        description="SubtitleTool - Generate subtitles for video files",
+        description="SubtitleTool - Generate subtitles for video files with speaker diarization",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s --input video.mp4
   %(prog)s --input video.mp4 --output subtitle --format srt
   %(prog)s --input video.mp4 --output both --format srt
+  %(prog)s --input video.mp4 --speakers 3
+  %(prog)s --input video.mp4 --no-diarization
   %(prog)s --list
   %(prog)s --search "hello world"
   %(prog)s --stats
@@ -194,10 +217,16 @@ Examples:
     parser.add_argument("--skip-rendering", action="store_true", 
                        help="Skip video rendering (only generate subtitle file)")
     
+    # Speaker diarization options
+    parser.add_argument("--speakers", "-s", type=int, 
+                       help="Number of speakers to detect (default: auto-detect)")
+    parser.add_argument("--no-diarization", action="store_true", 
+                       help="Disable speaker diarization")
+    
     # Utility commands
     parser.add_argument("--list", "-l", action="store_true", 
                        help="List available video files")
-    parser.add_argument("--search", "-s", type=str, 
+    parser.add_argument("--search", type=str, 
                        help="Search subtitles by text content")
     parser.add_argument("--video", type=str, 
                        help="Limit search to specific video file")
@@ -241,7 +270,9 @@ Examples:
                 output_format=args.output,
                 subtitle_format=args.format if args.output in ['subtitle', 'both'] else None,
                 skip_validation=args.skip_validation,
-                skip_rendering=args.skip_rendering
+                skip_rendering=args.skip_rendering,
+                enable_diarization=not args.no_diarization,
+                n_speakers=args.speakers
             )
         else:
             parser.print_help()

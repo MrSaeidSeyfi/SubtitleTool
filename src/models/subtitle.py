@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 @dataclass
@@ -8,6 +8,8 @@ class Subtitle:
     end_time: float
     text: str
     confidence: Optional[float] = None
+    speaker_id: Optional[int] = None
+    speaker_color: Optional[str] = None
     
     def __post_init__(self):
         """Validate subtitle data after initialization"""
@@ -29,7 +31,9 @@ class Subtitle:
             'start_time': self.start_time,
             'end_time': self.end_time,
             'text': self.text,
-            'confidence': self.confidence
+            'confidence': self.confidence,
+            'speaker_id': self.speaker_id,
+            'speaker_color': self.speaker_color
         }
     
     @classmethod
@@ -39,5 +43,19 @@ class Subtitle:
             start_time=data['start_time'],
             end_time=data['end_time'],
             text=data['text'],
-            confidence=data.get('confidence')
-        ) 
+            confidence=data.get('confidence'),
+            speaker_id=data.get('speaker_id'),
+            speaker_color=data.get('speaker_color')
+        )
+    
+    def get_speaker_label(self) -> str:
+        """Get speaker label for display"""
+        if self.speaker_id is not None:
+            return f"Speaker {self.speaker_id + 1}"
+        return ""
+    
+    def get_formatted_text(self, include_speaker: bool = True) -> str:
+        """Get formatted text with optional speaker label"""
+        if include_speaker and self.speaker_id is not None:
+            return f"[{self.get_speaker_label()}] {self.text}"
+        return self.text 

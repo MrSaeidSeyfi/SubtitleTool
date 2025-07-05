@@ -37,6 +37,8 @@ class DatabaseManager:
                         end_time REAL NOT NULL,
                         text TEXT NOT NULL,
                         confidence REAL,
+                        speaker_id INTEGER,
+                        speaker_color TEXT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -60,6 +62,11 @@ class DatabaseManager:
                     ON subtitles(start_time, end_time)
                 ''')
                 
+                conn.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_subtitles_speaker 
+                    ON subtitles(speaker_id)
+                ''')
+                
             logger.info("Database initialized successfully")
             
         except Exception as e:
@@ -78,10 +85,11 @@ class DatabaseManager:
                 if not cursor.fetchone():
                     return True
                 
-                # Check if video_path column exists
+                # Check if required columns exist
                 cursor = conn.execute("PRAGMA table_info(subtitles)")
                 columns = [row[1] for row in cursor.fetchall()]
-                return 'video_path' not in columns
+                required_columns = ['video_path', 'speaker_id', 'speaker_color']
+                return not all(col in columns for col in required_columns)
                 
         except Exception as e:
             logger.warning(f"Error checking database schema: {e}")
@@ -107,6 +115,8 @@ class DatabaseManager:
                         end_time REAL NOT NULL,
                         text TEXT NOT NULL,
                         confidence REAL,
+                        speaker_id INTEGER,
+                        speaker_color TEXT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -128,6 +138,11 @@ class DatabaseManager:
                 conn.execute('''
                     CREATE INDEX idx_subtitles_time 
                     ON subtitles(start_time, end_time)
+                ''')
+                
+                conn.execute('''
+                    CREATE INDEX idx_subtitles_speaker 
+                    ON subtitles(speaker_id)
                 ''')
             
             logger.info("Database recreated successfully")
@@ -154,10 +169,10 @@ class DatabaseManager:
                 
                 # Insert subtitles
                 conn.executemany('''
-                    INSERT INTO subtitles (video_path, start_time, end_time, text, confidence)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO subtitles (video_path, start_time, end_time, text, confidence, speaker_id, speaker_color)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', [
-                    (video_path, s.start_time, s.end_time, s.text, s.confidence)
+                    (video_path, s.start_time, s.end_time, s.text, s.confidence, s.speaker_id, s.speaker_color)
                     for s in subtitles
                 ])
                 
@@ -181,7 +196,7 @@ class DatabaseManager:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute('''
-                    SELECT start_time, end_time, text, confidence
+                    SELECT start_time, end_time, text, confidence, speaker_id, speaker_color
                     FROM subtitles
                     WHERE video_path = ?
                     ORDER BY start_time
@@ -193,7 +208,9 @@ class DatabaseManager:
                         start_time=row['start_time'],
                         end_time=row['end_time'],
                         text=row['text'],
-                        confidence=row['confidence']
+                        confidence=row['confidence'],
+                        speaker_id=row['speaker_id'],
+                        speaker_color=row['speaker_color']
                     )
                     subtitles.append(subtitle)
                 
