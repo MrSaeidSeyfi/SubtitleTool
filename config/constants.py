@@ -12,8 +12,8 @@ DEFAULT_WHISPER_MODEL = "base"
 DEFAULT_LANGUAGE = "en"
 
 # Video rendering settings
-DEFAULT_FONT_PATH = r"E:\Project\test\ocr_persian\fonts\Vazir-Regular.ttf"
-DEFAULT_FONT_SIZE_RATIO = 0.8
+DEFAULT_FONT_PATH = r"E:\Project\SubtitleTool\data\fonts\Vazir-Regular.ttf"
+DEFAULT_FONT_SIZE_RATIO = 0.3
 DEFAULT_SUBTITLE_HEIGHT_RATIO = 0.2
 DEFAULT_TEXT_COLOR = 'white'
 DEFAULT_STROKE_COLOR = 'black'
