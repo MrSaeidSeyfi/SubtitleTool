@@ -4,7 +4,7 @@ from typing import List, Optional
 from moviepy import VideoFileClip, TextClip, CompositeVideoClip
 from src.models.subtitle import Subtitle
 from config.settings import (
-    FONT_PATH, FONT_SIZE_RATIO, SUBTITLE_HEIGHT_RATIO,
+    FONT_PATH, FONT_SIZE, SUBTITLE_BOX_WIDTH_RATIO,
     TEXT_COLOR, STROKE_COLOR, STROKE_WIDTH, OUTPUT_DIR
 )
 
@@ -102,18 +102,17 @@ class SubtitleRenderer:
         for subtitle in subtitles:
             try:
                 # Calculate text size based on video dimensions
-                text_width = int(video.w * FONT_SIZE_RATIO)
-                text_height = int(video.h * SUBTITLE_HEIGHT_RATIO)
-                
-                # Determine text color based on speaker
+                text_width = int(video.w * SUBTITLE_BOX_WIDTH_RATIO)
+                # Height will be automatically calculated by TextClip
+                # Use fixed font size
                 text_color = self._get_speaker_color(subtitle)
                 
-                # Create text clip
                 txt_clip = TextClip(
                     text=subtitle.text,
                     font=self.font_path,
+                    font_size=FONT_SIZE,
                     method='caption',
-                    size=(text_width, text_height),
+                    size=(text_width, None),
                     color=text_color,
                     stroke_color=STROKE_COLOR,
                     stroke_width=STROKE_WIDTH,
