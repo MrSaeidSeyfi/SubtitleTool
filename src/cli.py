@@ -25,9 +25,9 @@ class SubtitleToolCLI:
 		self.audio_extractor = AudioExtractor()
 		self.transcriber = Transcriber()
 		self.validator = SubtitleValidator()
-		self.renderer = SubtitleRenderer()
 		self.storage_manager = StorageManager()
 		self.translation_service = TranslationService()
+		self.renderer = None  # Will be initialized per process_video
 	
 	def process_video(self, video_path: str,
 				 	skip_validation: bool = False,
@@ -71,6 +71,8 @@ class SubtitleToolCLI:
 					logger.info("No translation requested - rendering original subtitles on video")
 				
 				logger.info("Rendering video with subtitles...")
+				# Initialize renderer with target language
+				self.renderer = SubtitleRenderer(target_language=tgt_lang)
 				output_path = self.renderer.render(video_path, subtitles)
 				logger.info(f"Video rendered successfully: {output_path}")
 				

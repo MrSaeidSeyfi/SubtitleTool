@@ -14,7 +14,6 @@ DEFAULT_LANGUAGE = "en"
 # Video rendering settings
 DEFAULT_FONT_PATH = r"E:\Project\SubtitleTool\data\fonts\Vazir-Regular.ttf"
 DEFAULT_FONT_SIZE = 33  # Fixed font size
-DEFAULT_SUBTITLE_BOX_WIDTH_RATIO = 0.8  # 80% of frame width
 DEFAULT_TEXT_COLOR = 'white'
 DEFAULT_STROKE_COLOR = 'black'
 DEFAULT_STROKE_WIDTH = 2

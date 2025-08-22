@@ -4,9 +4,24 @@ from typing import List, Optional
 from moviepy import VideoFileClip, TextClip, CompositeVideoClip
 from src.models.subtitle import Subtitle
 from config.settings import (
-	FONT_PATH, FONT_SIZE, SUBTITLE_BOX_WIDTH_RATIO,
-	TEXT_COLOR, STROKE_COLOR, STROKE_WIDTH, OUTPUT_DIR
+	FONT_PATH, FONT_SIZE, TEXT_COLOR, STROKE_COLOR, STROKE_WIDTH, OUTPUT_DIR
 )
+from bidi.algorithm import get_display
+import arabic_reshaper
+
+# List of RTL language codes (ISO 639-3 + script)
+RTL_LANG_CODES = [
+    'ar', 'fa', 'he', 'ur', 'ps', 'dv', 'ku', 'yi', 'ug', 'syr', 'arc', 'sam', 'nqo', 'arz', 'ckb', 'prs', 'pus', 'sd', 'ug', 'yi',
+]
+# Also match codes ending with _Arab or _Hebr, etc.
+def is_rtl_language(lang_code: str) -> bool:
+    if not lang_code:
+        return False
+    if any(lang_code.startswith(prefix) for prefix in RTL_LANG_CODES):
+        return True
+    if lang_code.endswith('_Arab') or lang_code.endswith('_Hebr') or lang_code.endswith('_Thaa'):
+        return True
+    return False
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +30,8 @@ class SubtitleRenderer:
 	
 	def __init__(self, 
 				 font_path: Optional[str] = None,
-				 output_dir: Optional[Path] = None):
+				 output_dir: Optional[Path] = None,
+				 target_language: Optional[str] = None):
 		"""
 		Initialize subtitle renderer
 		
@@ -29,6 +45,7 @@ class SubtitleRenderer:
 		if not Path(self.font_path).exists():
 			logger.warning(f"Font file not found: {self.font_path}")
 			self.font_path = None  # Use default font
+		self.target_language = target_language
 	
 	def render(self, video_path: str, subtitles: List[Subtitle]) -> str:
 		"""
@@ -79,6 +96,14 @@ class SubtitleRenderer:
 			logger.error(f"Error rendering subtitles for {video_path}: {e}")
 			raise
 	
+	def _preprocess_text(self, text: str) -> str:
+		if is_rtl_language(self.target_language):
+			# Reshape and reorder for RTL
+			reshaped_text = arabic_reshaper.reshape(text)
+			bidi_text = get_display(reshaped_text)
+			return bidi_text
+		return text
+
 	def _create_text_clips(self, video: VideoFileClip, subtitles: List[Subtitle]) -> List[TextClip]:
 		"""
 		Create text clips for subtitles
@@ -94,18 +119,18 @@ class SubtitleRenderer:
 		
 		for subtitle in subtitles:
 			try:
-				text_width = int(video.w * SUBTITLE_BOX_WIDTH_RATIO)
+				text_width = int(video.w - 20)  # 10px margin left and right
 				text_color = TEXT_COLOR
-				
+				processed_text = self._preprocess_text(subtitle.text)
 				txt_clip = TextClip(
-					text=subtitle.text,
+					text=processed_text,
 					font=self.font_path,
 					font_size=FONT_SIZE,
 					method='caption',
 					size=(text_width, None),
 					color=text_color,
 					stroke_color=STROKE_COLOR,
-					stroke_width=STROKE_WIDTH,
+					stroke_width=STROKE_WIDTH, 
 					duration=subtitle.duration
 				).with_start(subtitle.start_time).with_position(('center', 'bottom'))
 				
