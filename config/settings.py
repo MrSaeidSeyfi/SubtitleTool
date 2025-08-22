@@ -15,9 +15,6 @@ INPUT_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
-# Database path
-DB_PATH = PROJECT_ROOT / DEFAULT_DB_NAME
-
 # Font path
 FONT_PATH = Path(DEFAULT_FONT_PATH)
 

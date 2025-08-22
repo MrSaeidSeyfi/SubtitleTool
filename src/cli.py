@@ -4,285 +4,222 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# Add project root to path for imports
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from config.settings import setup_logging, INPUT_DIR, OUTPUT_DIR
+from config.settings import setup_logging, INPUT_DIR
 from src.core.audio import AudioExtractor
 from src.core.transcription import Transcriber
 from src.core.validation import SubtitleValidator
 from src.core.rendering import SubtitleRenderer
-from src.core.speaker_diarization import SpeakerDiarizer
-from src.services.database import DatabaseManager
 from src.services.storage import StorageManager
+from src.services.translation import TranslationService
 
 logger = logging.getLogger(__name__)
 
 class SubtitleToolCLI:
-    """Command line interface for SubtitleTool"""
-    
-    def __init__(self):
-        """Initialize CLI components"""
-        self.audio_extractor = AudioExtractor()
-        self.transcriber = Transcriber()
-        self.validator = SubtitleValidator()
-        self.renderer = SubtitleRenderer()
-        self.diarizer = SpeakerDiarizer()
-        self.db_manager = DatabaseManager()
-        self.storage_manager = StorageManager()
-    
-    def process_video(self, video_path: str, 
-                     output_format: str = 'video',
-                     subtitle_format: Optional[str] = None,
-                     skip_validation: bool = False,
-                     skip_rendering: bool = False,
-                     enable_diarization: bool = True,
-                     n_speakers: Optional[int] = None) -> None:
-        """
-        Process video file to generate subtitles
-        
-        Args:
-            video_path: Path to input video file
-            output_format: Output format ('video', 'subtitle', 'both')
-            subtitle_format: Subtitle file format ('srt', 'vtt', 'ass')
-            skip_validation: Skip subtitle validation
-            skip_rendering: Skip video rendering
-            enable_diarization: Enable speaker diarization
-            n_speakers: Number of speakers to detect
-        """
-        try:
-            logger.info(f"Starting processing: {video_path}")
-            
-            # Validate input file
-            if not self.storage_manager.validate_video_file(video_path):
-                logger.error("Invalid video file")
-                return
-            
-            # Extract audio
-            logger.info("Extracting audio...")
-            audio_path = self.audio_extractor.extract_audio(video_path)
-            
-            try:
-                # Transcribe audio
-                logger.info("Transcribing audio...")
-                subtitles = self.transcriber.transcribe(audio_path)
-                
-                # Speaker diarization
-                if enable_diarization and len(subtitles) > 0:
-                    logger.info("Performing speaker diarization...")
-                    if n_speakers:
-                        self.diarizer.n_speakers = n_speakers
-                    subtitles = self.diarizer.assign_speakers(audio_path, subtitles)
-                    
-                    # Show speaker statistics
-                    speaker_info = self.diarizer.get_speaker_info(subtitles)
-                    logger.info("Speaker diarization results:")
-                    for speaker_id, info in speaker_info.items():
-                        logger.info(f"  Speaker {speaker_id + 1} ({info['color']}): {info['segments']} segments, {info['total_duration']:.1f}s")
-                
-                # Validate and correct subtitles
-                if not skip_validation:
-                    logger.info("Validating subtitles...")
-                    subtitles = self.validator.validate_and_correct(subtitles)
-                    subtitles = self.validator.validate_subtitle_timing(subtitles)
-                
-                # Store in database
-                logger.info("Storing subtitles in database...")
-                self.db_manager.insert_subtitles(video_path, subtitles)
-                
-                # Generate output
-                if output_format in ['video', 'both'] and not skip_rendering:
-                    logger.info("Rendering video with subtitles...")
-                    output_path = self.renderer.render(video_path, subtitles)
-                    logger.info(f"Video rendered: {output_path}")
-                
-                if output_format in ['subtitle', 'both'] and subtitle_format:
-                    logger.info(f"Generating subtitle file ({subtitle_format})...")
-                    subtitle_path = self.renderer.render_subtitle_file(
-                        video_path, subtitles, subtitle_format, include_speakers=enable_diarization
-                    )
-                    logger.info(f"Subtitle file created: {subtitle_path}")
-                
-                logger.info("Processing completed successfully!")
-                
-            finally:
-                # Clean up audio file
-                self.audio_extractor.cleanup_audio(audio_path)
-                
-        except Exception as e:
-            logger.error(f"Error processing video: {e}")
-            raise
-    
-    def list_videos(self, directory: Optional[str] = None) -> None:
-        """List available video files"""
-        try:
-            search_dir = Path(directory) if directory else INPUT_DIR
-            video_files = self.storage_manager.get_video_files(search_dir)
-            
-            if not video_files:
-                print(f"No video files found in {search_dir}")
-                return
-            
-            print(f"\nVideo files in {search_dir}:")
-            print("-" * 60)
-            for video_file in video_files:
-                info = self.storage_manager.get_file_info(str(video_file))
-                print(f"{video_file.name:<30} {info['size_mb']:>8.1f} MB")
-            
-        except Exception as e:
-            logger.error(f"Error listing videos: {e}")
-    
-    def search_subtitles(self, query: str, video_path: Optional[str] = None) -> None:
-        """Search subtitles by text content"""
-        try:
-            subtitles = self.db_manager.search_subtitles(query, video_path)
-            
-            if not subtitles:
-                print(f"No subtitles found matching '{query}'")
-                return
-            
-            print(f"\nSubtitles matching '{query}':")
-            print("-" * 80)
-            for subtitle in subtitles:
-                speaker_label = subtitle.get_speaker_label()
-                speaker_info = f" [{speaker_label}]" if speaker_label else ""
-                print(f"{subtitle.start_time:>8.2f}s - {subtitle.end_time:>8.2f}s{speaker_info}: {subtitle.text}")
-            
-        except Exception as e:
-            logger.error(f"Error searching subtitles: {e}")
-    
-    def show_stats(self) -> None:
-        """Show processing statistics"""
-        try:
-            processed_videos = self.db_manager.get_processed_videos()
-            
-            print("\nProcessing Statistics:")
-            print("-" * 40)
-            print(f"Total videos processed: {len(processed_videos)}")
-            
-            if processed_videos:
-                print("\nRecently processed videos:")
-                for video_path in processed_videos[:5]:
-                    count = self.db_manager.get_subtitle_count(video_path)
-                    print(f"  {Path(video_path).name}: {count} subtitles")
-            
-            # Directory stats
-            input_count, input_size = self.storage_manager.get_directory_size(INPUT_DIR)
-            output_count, output_size = self.storage_manager.get_directory_size(OUTPUT_DIR)
-            
-            print(f"\nStorage:")
-            print(f"  Input directory: {input_count} files, {input_size} MB")
-            print(f"  Output directory: {output_count} files, {output_size} MB")
-            
-        except Exception as e:
-            logger.error(f"Error showing stats: {e}")
-    
-    def cleanup(self) -> None:
-        """Clean up temporary files"""
-        try:
-            count = self.storage_manager.cleanup_temp_files()
-            print(f"Cleaned up {count} temporary files")
-        except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+	"""Command line interface for SubtitleTool"""
+	
+	def __init__(self):
+		"""Initialize CLI components"""
+		self.audio_extractor = AudioExtractor()
+		self.transcriber = Transcriber()
+		self.validator = SubtitleValidator()
+		self.renderer = SubtitleRenderer()
+		self.storage_manager = StorageManager()
+		self.translation_service = TranslationService()
+	
+	def process_video(self, video_path: str,
+				 	skip_validation: bool = False,
+				 	translate: bool = False,
+				 	src_lang: str = "eng_Latn",
+				 	tgt_lang: str = "pes_Arab") -> None:
+		"""
+		Process video file to generate subtitles
+		
+		Args:
+			video_path: Path to input video file
+			skip_validation: Skip subtitle validation
+			translate: Enable translation
+			src_lang: Source language code for translation
+			tgt_lang: Target language code for translation
+		"""
+		try:
+			logger.info(f"Starting processing: {video_path}")
+			
+			if not self.storage_manager.validate_video_file(video_path):
+				logger.error("Invalid video file")
+				return
+			
+			logger.info("Extracting audio...")
+			audio_path = self.audio_extractor.extract_audio(video_path)
+			
+			try:
+				logger.info("Transcribing audio...")
+				subtitles = self.transcriber.transcribe(audio_path)
+				
+				if not skip_validation:
+					logger.info("Validating subtitles...")
+					subtitles = self.validator.validate_and_correct(subtitles)
+					subtitles = self.validator.validate_subtitle_timing(subtitles)
+				
+				if translate:
+					logger.info(f"Translating subtitles from {src_lang} to {tgt_lang}...")
+					subtitles = self.translation_service.translate_subtitles(subtitles, src_lang, tgt_lang)
+					logger.info("Translation completed - rendering translated subtitles on video")
+				else:
+					logger.info("No translation requested - rendering original subtitles on video")
+				
+				logger.info("Rendering video with subtitles...")
+				output_path = self.renderer.render(video_path, subtitles)
+				logger.info(f"Video rendered successfully: {output_path}")
+				
+				logger.info("Generating SRT subtitle file...")
+				subtitle_path = self.renderer.render_subtitle_file(
+					video_path, subtitles, 'srt'
+				)
+				logger.info(f"Subtitle file created: {subtitle_path}")
+				
+				logger.info("Processing completed successfully!")
+				
+			finally:
+				self.audio_extractor.cleanup_audio(audio_path)
+				
+		except Exception as e:
+			logger.error(f"Error processing video: {e}")
+			raise
+	
+	def list_videos(self, directory: Optional[str] = None) -> None:
+		"""List available video files"""
+		try:
+			search_dir = Path(directory) if directory else INPUT_DIR
+			video_files = self.storage_manager.get_video_files(search_dir)
+			
+			if not video_files:
+				print(f"No video files found in {search_dir}")
+				return
+			
+			print(f"\nVideo files in {search_dir}:")
+			print("-" * 60)
+			for video_file in video_files:
+				info = self.storage_manager.get_file_info(str(video_file))
+				print(f"{video_file.name:<30} {info['size_mb']:>8.1f} MB")
+			
+		except Exception as e:
+			logger.error(f"Error listing videos: {e}")
+	
+	def list_languages(self) -> None:
+		"""List supported languages for translation"""
+		try:
+			languages = self.translation_service.get_supported_languages()
+			
+			print("\nSupported languages for translation:")
+			print("-" * 60)
+			for i, lang in enumerate(languages, 1):
+				print(f"{i:3d}. {lang}")
+			
+			print(f"\nTotal: {len(languages)} languages supported")
+			
+		except Exception as e:
+			logger.error(f"Error listing languages: {e}")
+	
+	def test_translation(self) -> None:
+		"""Test translation API connection"""
+		try:
+			print("Testing translation API connection...")
+			if self.translation_service.test_connection():
+				print("✓ Translation API connection successful")
+			else:
+				print("✗ Translation API connection failed")
+		except Exception as e:
+			logger.error(f"Error testing translation: {e}")
+	
+	def cleanup(self) -> None:
+		"""Clean up temporary files"""
+		try:
+			count = self.storage_manager.cleanup_temp_files()
+			print(f"Cleaned up {count} temporary files")
+		except Exception as e:
+			logger.error(f"Error during cleanup: {e}")
 
 def main():
-    """Main CLI entry point"""
-    parser = argparse.ArgumentParser(
-        description="SubtitleTool - Generate subtitles for video files with speaker diarization",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+	"""Main CLI entry point"""
+	parser = argparse.ArgumentParser(
+		description="SubtitleTool - Generate videos with embedded subtitles, with optional translation",
+		formatter_class=argparse.RawDescriptionHelpFormatter,
+		epilog="""
 Examples:
   %(prog)s --input video.mp4
-  %(prog)s --input video.mp4 --output subtitle --format srt
-  %(prog)s --input video.mp4 --output both --format srt
-  %(prog)s --input video.mp4 --speakers 3
-  %(prog)s --input video.mp4 --no-diarization
+  %(prog)s --input video.mp4 --translate --src-lang eng_Latn --tgt-lang pes_Arab
+  %(prog)s --list-languages
+  %(prog)s --test-translation
   %(prog)s --list
-  %(prog)s --search "hello world"
-  %(prog)s --stats
-        """
-    )
-    
-    # Input/output options
-    parser.add_argument("--input", "-i", type=str, help="Input video file path")
-    parser.add_argument("--output", "-o", choices=['video', 'subtitle', 'both'], 
-                       default='video', help="Output format (default: video)")
-    parser.add_argument("--format", "-f", choices=['srt', 'vtt', 'ass'], 
-                       default='srt', help="Subtitle file format (default: srt)")
-    
-    # Processing options
-    parser.add_argument("--skip-validation", action="store_true", 
-                       help="Skip subtitle validation and correction")
-    parser.add_argument("--skip-rendering", action="store_true", 
-                       help="Skip video rendering (only generate subtitle file)")
-    
-    # Speaker diarization options
-    parser.add_argument("--speakers", "-s", type=int, 
-                       help="Number of speakers to detect (default: auto-detect)")
-    parser.add_argument("--no-diarization", action="store_true", 
-                       help="Disable speaker diarization")
-    
-    # Utility commands
-    parser.add_argument("--list", "-l", action="store_true", 
-                       help="List available video files")
-    parser.add_argument("--search", type=str, 
-                       help="Search subtitles by text content")
-    parser.add_argument("--video", type=str, 
-                       help="Limit search to specific video file")
-    parser.add_argument("--stats", action="store_true", 
-                       help="Show processing statistics")
-    parser.add_argument("--cleanup", action="store_true", 
-                       help="Clean up temporary files")
-    
-    # Logging options
-    parser.add_argument("--verbose", "-v", action="store_true", 
-                       help="Enable verbose logging")
-    parser.add_argument("--quiet", "-q", action="store_true", 
-                       help="Suppress logging output")
-    
-    args = parser.parse_args()
-    
-    # Setup logging
-    if args.quiet:
-        setup_logging("ERROR")
-    elif args.verbose:
-        setup_logging("DEBUG")
-    else:
-        setup_logging("INFO")
-    
-    # Initialize CLI
-    cli = SubtitleToolCLI()
-    
-    try:
-        # Handle different commands
-        if args.list:
-            cli.list_videos()
-        elif args.search:
-            cli.search_subtitles(args.search, args.video)
-        elif args.stats:
-            cli.show_stats()
-        elif args.cleanup:
-            cli.cleanup()
-        elif args.input:
-            cli.process_video(
-                video_path=args.input,
-                output_format=args.output,
-                subtitle_format=args.format if args.output in ['subtitle', 'both'] else None,
-                skip_validation=args.skip_validation,
-                skip_rendering=args.skip_rendering,
-                enable_diarization=not args.no_diarization,
-                n_speakers=args.speakers
-            )
-        else:
-            parser.print_help()
-            
-    except KeyboardInterrupt:
-        logger.info("Processing interrupted by user")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        sys.exit(1)
+		"""
+	)
+	
+	parser.add_argument("--input", "-i", type=str, help="Input video file path")
+	
+	parser.add_argument("--skip-validation", action="store_true", 
+					   help="Skip subtitle validation and correction")
+	
+	parser.add_argument("--translate", action="store_true",
+					   help="Enable subtitle translation")
+	parser.add_argument("--src-lang", type=str, default="eng_Latn",
+					   help="Source language code for translation (default: eng_Latn)")
+	parser.add_argument("--tgt-lang", type=str, default="pes_Arab",
+					   help="Target language code for translation (default: pes_Arab)")
+	
+	parser.add_argument("--list", "-l", action="store_true", 
+					   help="List available video files")
+	parser.add_argument("--list-languages", action="store_true",
+					   help="List supported languages for translation")
+	parser.add_argument("--test-translation", action="store_true",
+					   help="Test translation API connection")
+	parser.add_argument("--cleanup", action="store_true", 
+					   help="Clean up temporary files")
+	
+	parser.add_argument("--verbose", "-v", action="store_true", 
+					   help="Enable verbose logging")
+	parser.add_argument("--quiet", "-q", action="store_true", 
+					   help="Suppress logging output")
+	
+	args = parser.parse_args()
+	
+	if args.quiet:
+		setup_logging("ERROR")
+	elif args.verbose:
+		setup_logging("DEBUG")
+	else:
+		setup_logging("INFO")
+	
+	cli = SubtitleToolCLI()
+	
+	try:
+		if args.list:
+			cli.list_videos()
+		elif args.list_languages:
+			cli.list_languages()
+		elif args.test_translation:
+			cli.test_translation()
+		elif args.cleanup:
+			cli.cleanup()
+		elif args.input:
+			cli.process_video(
+				video_path=args.input,
+				skip_validation=args.skip_validation,
+				translate=args.translate,
+				src_lang=args.src_lang,
+				tgt_lang=args.tgt_lang
+			)
+		else:
+			parser.print_help()
+			
+	except KeyboardInterrupt:
+		logger.info("Processing interrupted by user")
+		sys.exit(1)
+	except Exception as e:
+		logger.error(f"Error: {e}")
+		sys.exit(1)
 
 if __name__ == "__main__":
-    main() 
+	main() 

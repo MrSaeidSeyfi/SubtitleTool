@@ -49,13 +49,13 @@ class Transcriber:
             logger.info(f"Transcribing audio: {audio_path}")
             
             # Perform transcription
+            
             result = self.model.transcribe(
                 audio_path, 
                 language=self.language,
                 verbose=True
             )
             
-            # Convert to Subtitle objects
             subtitles = []
             for segment in result['segments']:
                 subtitle = Subtitle(
@@ -89,7 +89,6 @@ class Transcriber:
             
             subtitles = []
             for start_time, end_time in timestamps:
-                # Extract segment
                 result = self.model.transcribe(
                     audio_path,
                     language=self.language,

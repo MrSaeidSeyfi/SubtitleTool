@@ -32,17 +32,13 @@ class AudioExtractor:
             
             logger.info(f"Extracting audio from {video_path}")
             
-            # Load video
             video = VideoFileClip(str(video_path))
             
-            # Generate audio output path
             audio_filename = f"{video_path.stem}.wav"
             audio_path = self.temp_dir / audio_filename
             
-            # Extract audio
             video.audio.write_audiofile(str(audio_path))
             
-            # Clean up
             video.close()
             
             logger.info(f"Audio extracted to {audio_path}")

@@ -25,7 +25,6 @@ class StorageManager:
         self.output_dir = output_dir or OUTPUT_DIR
         self.temp_dir = temp_dir or TEMP_DIR
         
-        # Ensure directories exist
         self.input_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(parents=True, exist_ok=True)
@@ -65,10 +64,8 @@ class StorageManager:
             if not source.exists():
                 raise FileNotFoundError(f"Source file not found: {source_path}")
             
-            # Generate destination path
             dest_path = self.input_dir / source.name
             
-            # Copy file
             shutil.copy2(source, dest_path)
             
             logger.info(f"Copied {source_path} to {dest_path}")
@@ -94,13 +91,11 @@ class StorageManager:
             if not source.exists():
                 raise FileNotFoundError(f"Source file not found: {source_path}")
             
-            # Generate destination path
             if new_name:
                 dest_path = self.output_dir / new_name
             else:
                 dest_path = self.output_dir / source.name
             
-            # Move file
             shutil.move(str(source), str(dest_path))
             
             logger.info(f"Moved {source_path} to {dest_path}")
@@ -240,13 +235,11 @@ class StorageManager:
             backup_dir = backup_dir or self.temp_dir
             backup_dir.mkdir(parents=True, exist_ok=True)
             
-            # Generate backup filename with timestamp
             from datetime import datetime
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             backup_name = f"{source.stem}_{timestamp}{source.suffix}"
             backup_path = backup_dir / backup_name
             
-            # Copy file
             shutil.copy2(source, backup_path)
             
             logger.info(f"Created backup: {backup_path}")
@@ -269,17 +262,14 @@ class StorageManager:
         try:
             file_path = Path(file_path)
             
-            # Check if file exists
             if not file_path.exists():
                 logger.warning(f"File does not exist: {file_path}")
                 return False
             
-            # Check file extension
             if file_path.suffix.lower() not in SUPPORTED_VIDEO_FORMATS:
                 logger.warning(f"Unsupported video format: {file_path.suffix}")
                 return False
             
-            # Check file size (minimum 1KB)
             if file_path.stat().st_size < 1024:
                 logger.warning(f"File too small: {file_path}")
                 return False
