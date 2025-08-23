@@ -9,6 +9,8 @@ This project is a tool that automatically adds subtitles to your videos. It can 
 - **Translates subtitles** into 200+ languages (optional)
 - **Burns subtitles** directly onto your video
 - **Generates SRT files** for use in other video editors
+  
+<img width="800" height="178" alt="Screenshot 2025-08-23 163443" src="https://github.com/user-attachments/assets/6a027661-14d2-43c1-ad84-c42a1f271f57" />
 
 ## Quick Start
 
