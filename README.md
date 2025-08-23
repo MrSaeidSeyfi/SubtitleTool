@@ -1,0 +1,68 @@
+# SubtitleTool
+
+This project is a tool that automatically adds subtitles to your videos. It can transcribe speech from any video file and optionally translate the subtitles into different languages.
+
+## What it does
+
+- **Extracts audio** from your video files
+- **Transcribes speech** using AI to create subtitles
+- **Translates subtitles** into 200+ languages (optional)
+- **Burns subtitles** directly onto your video
+- **Generates SRT files** for use in other video editors
+
+## Quick Start
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Basic usage - add English subtitles:**
+   ```bash
+   python src/cli.py --input video_path.mp4
+   ```
+
+3. **Add translated subtitles:**
+   ```bash
+   python src/cli.py --input video_path.mp4 --translate --src-lang eng_Latn --tgt-lang pes_Arab
+   ```
+
+4. **Use custom font:**
+   ```bash
+   python src/cli.py --input your_video.mp4 --font-family "Arial"
+   ```
+
+## Examples
+
+```bash
+# List available videos
+python src/cli.py --list
+
+# Use custom font and translate to Spanish
+python src/cli.py --input video.mp4 --translate --src-lang eng_Latn --tgt-lang spa_Latn --font-family "Times New Roman"
+
+# See all supported languages
+python src/cli.py --list-languages
+```
+
+## Supported Formats
+
+- **Video:** MP4, AVI, MOV, MKV
+- **Audio:** WAV, MP3, AAC, FLAC, M4A
+- **Output:** Video with embedded subtitles + SRT file
+
+## How it works
+
+1. Upload your video file to the `data/input/` folder
+2. Run the tool with your desired options
+3. Get a new video with subtitles burned in
+4. Find your processed video in `data/output/`
+
+## Notes
+
+- The tool automatically handles different languages and scripts
+- Translation is optional - you can just get transcribed subtitles
+- Large videos are processed efficiently using batch translation
+- Custom fonts can be specified for different subtitle styles
+
+That's it! Just drop a video in the input folder and run the tool.

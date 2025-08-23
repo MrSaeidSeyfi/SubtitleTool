@@ -74,7 +74,7 @@ class SubtitleRenderer:
 			
 			final_video = CompositeVideoClip([video] + text_clips)
 			
-			output_filename = f"{video_path.stem}_subtitled{video_path.suffix}"
+			output_filename = f"{video_path.stem}_subtitled_{self.target_language}{video_path.suffix}"
 			output_path = self.output_dir / output_filename
 			
 			logger.info("Writing final video...")
@@ -158,7 +158,7 @@ class SubtitleRenderer:
 		"""
 		try:
 			video_path = Path(video_path)
-			output_filename = f"{video_path.stem}.{format}"
+			output_filename = f"{video_path.stem}_{self.target_language}.{format}"
 			output_path = self.output_dir / output_filename
 			
 			if format.lower() == 'srt':

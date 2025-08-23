@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
+!data/results/
 # Distribution / packaging
 .Python
 build/
@@ -131,7 +132,7 @@ cython_debug/
 
 # Project-specific files
 # Media files (input/output videos and audio)
-*.mp4
+# *.mp4
 *.avi
 *.mov
 *.mkv
@@ -193,6 +194,7 @@ Thumbs.db
 
 # Linux
 *~
+
 
 # Backup files
 *.bak

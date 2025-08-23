@@ -33,7 +33,8 @@ class SubtitleToolCLI:
 				 	skip_validation: bool = False,
 				 	translate: bool = False,
 				 	src_lang: str = "eng_Latn",
-				 	tgt_lang: str = "pes_Arab") -> None:
+				 	tgt_lang: str = "pes_Arab",
+				 	font_family: Optional[str] = None) -> None:
 		"""
 		Process video file to generate subtitles
 		
@@ -43,6 +44,7 @@ class SubtitleToolCLI:
 			translate: Enable translation
 			src_lang: Source language code for translation
 			tgt_lang: Target language code for translation
+			font_family: Custom font family for subtitle rendering
 		"""
 		try:
 			logger.info(f"Starting processing: {video_path}")
@@ -71,8 +73,15 @@ class SubtitleToolCLI:
 					logger.info("No translation requested - rendering original subtitles on video")
 				
 				logger.info("Rendering video with subtitles...")
-				# Initialize renderer with target language
-				self.renderer = SubtitleRenderer(target_language=tgt_lang)
+				# Initialize renderer with target language and custom font if specified
+				if font_family:
+					logger.info(f"Using custom font family: {font_family}")
+					self.renderer = SubtitleRenderer(
+						font_path=font_family,
+						target_language=tgt_lang
+					)
+				else:
+					self.renderer = SubtitleRenderer(target_language=tgt_lang)
 
 				logger.info("Generating SRT subtitle file...")
 				subtitle_path = self.renderer.render_subtitle_file(
@@ -155,6 +164,8 @@ def main():
 Examples:
   %(prog)s --input video.mp4
   %(prog)s --input video.mp4 --translate --src-lang eng_Latn --tgt-lang pes_Arab
+  %(prog)s --input video.mp4 --font-family "Arial"
+  %(prog)s --input video.mp4 --translate --src-lang eng_Latn --tgt-lang pes_Arab --font-family "Times New Roman"
   %(prog)s --list-languages
   %(prog)s --test-translation
   %(prog)s --list
@@ -172,6 +183,9 @@ Examples:
 					   help="Source language code for translation (default: eng_Latn)")
 	parser.add_argument("--tgt-lang", type=str, default="pes_Arab",
 					   help="Target language code for translation (default: pes_Arab)")
+	
+	parser.add_argument("--font-family", type=str,
+					   help="Custom font family for subtitle rendering (e.g., 'Arial', 'Times New Roman')")
 	
 	parser.add_argument("--list", "-l", action="store_true", 
 					   help="List available video files")
@@ -213,7 +227,8 @@ Examples:
 				skip_validation=args.skip_validation,
 				translate=args.translate,
 				src_lang=args.src_lang,
-				tgt_lang=args.tgt_lang
+				tgt_lang=args.tgt_lang,
+				font_family=args.font_family
 			)
 		else:
 			parser.print_help()
