@@ -73,14 +73,16 @@ class SubtitleToolCLI:
 				logger.info("Rendering video with subtitles...")
 				# Initialize renderer with target language
 				self.renderer = SubtitleRenderer(target_language=tgt_lang)
-				output_path = self.renderer.render(video_path, subtitles)
-				logger.info(f"Video rendered successfully: {output_path}")
-				
+
 				logger.info("Generating SRT subtitle file...")
 				subtitle_path = self.renderer.render_subtitle_file(
 					video_path, subtitles, 'srt'
 				)
 				logger.info(f"Subtitle file created: {subtitle_path}")
+				
+
+				output_path = self.renderer.render(video_path, subtitles)
+				logger.info(f"Video rendered successfully: {output_path}")
 				
 				logger.info("Processing completed successfully!")
 				

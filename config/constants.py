@@ -13,10 +13,13 @@ DEFAULT_LANGUAGE = "en"
 
 # Video rendering settings
 DEFAULT_FONT_PATH = r"E:\Project\SubtitleTool\data\fonts\Vazir-Regular.ttf"
-DEFAULT_FONT_SIZE = 33  # Fixed font size
+DEFAULT_FONT_SIZE = 22  # Fixed font size
 DEFAULT_TEXT_COLOR = 'white'
 DEFAULT_STROKE_COLOR = 'black'
 DEFAULT_STROKE_WIDTH = 2
+
+# Translation settings
+MAX_TRANSLATION_BATCH_SIZE = 300  # Maximum texts per batch API call
 
 # Logging
 DEFAULT_LOG_LEVEL = "INFO"
