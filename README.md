@@ -59,7 +59,7 @@ python src/cli.py --list-languages
 2. Run the tool with your desired options
 3. Get a new video with subtitles burned in
 4. Find your processed video in `data/results/`
-5. 
+   
 ## Project Results
 <div align="center">
 
