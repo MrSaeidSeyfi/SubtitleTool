@@ -61,10 +61,10 @@ python src/cli.py --list-languages
 ## Project Results
 
 <p align="center">
-  <video src="https://github.com/user-attachments/assets/40ac13de-5012-4289-9827-c7a66725066f" width="300" controls></video>
-  <video src="https://github.com/user-attachments/assets/0a049a6f-2b73-4568-be3b-ab51d1263e6e" width="300" controls></video>
-  <video src="https://github.com/user-attachments/assets/1bce8428-6bb0-468b-8dfc-ead2d4ff9f0b" width="300" controls></video>
-  <video src="https://github.com/user-attachments/assets/4a440694-8b1d-47c4-98f3-ad52e88b364a" width="300" controls></video>
+  <video src="https://github.com/user-attachments/assets/40ac13de-5012-4289-9827-c7a66725066f" width="100" controls></video>
+  <video src="https://github.com/user-attachments/assets/0a049a6f-2b73-4568-be3b-ab51d1263e6e" width="100" controls></video>
+  <video src="https://github.com/user-attachments/assets/1bce8428-6bb0-468b-8dfc-ead2d4ff9f0b" width="100" controls></video>
+  <video src="https://github.com/user-attachments/assets/4a440694-8b1d-47c4-98f3-ad52e88b364a" width="100" controls></video>
 </p>
 
 ## Notes
