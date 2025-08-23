@@ -57,15 +57,16 @@ python src/cli.py --list-languages
 2. Run the tool with your desired options
 3. Get a new video with subtitles burned in
 4. Find your processed video in `data/results/`
-
+5. 
 ## Project Results
+<div align="center">
 
-<p align="center">
-  <video src="https://github.com/user-attachments/assets/40ac13de-5012-4289-9827-c7a66725066f" width="100" controls></video>
-  <video src="https://github.com/user-attachments/assets/0a049a6f-2b73-4568-be3b-ab51d1263e6e" width="100" controls></video>
-  <video src="https://github.com/user-attachments/assets/1bce8428-6bb0-468b-8dfc-ead2d4ff9f0b" width="100" controls></video>
-  <video src="https://github.com/user-attachments/assets/4a440694-8b1d-47c4-98f3-ad52e88b364a" width="100" controls></video>
-</p>
+[<img alt="Result 1" src="docs/thumbs/result1.jpg" width="300">](https://github.com/user-attachments/assets/40ac13de-5012-4289-9827-c7a66725066f)
+[<img alt="Result 2" src="docs/thumbs/result2.jpg" width="300">](https://github.com/user-attachments/assets/0a049a6f-2b73-4568-be3b-ab51d1263e6e)
+[<img alt="Result 3" src="docs/thumbs/result3.jpg" width="300">](https://github.com/user-attachments/assets/1bce8428-6bb0-468b-8dfc-ead2d4ff9f0b)
+[<img alt="Result 4" src="docs/thumbs/result4.jpg" width="300">](https://github.com/user-attachments/assets/4a440694-8b1d-47c4-98f3-ad52e88b364a)
+
+</div>
 
 ## Notes
 - The tool automatically handles different languages and scripts
