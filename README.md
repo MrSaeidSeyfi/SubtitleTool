@@ -56,7 +56,11 @@ python src/cli.py --list-languages
 1. Upload your video file to the `data/input/` folder
 2. Run the tool with your desired options
 3. Get a new video with subtitles burned in
-4. Find your processed video in `data/output/`
+4. Find your processed video in `data/results/`
+
+## Project Results
+
+Check out the `data/results/` folder to see examples of videos processed with this tool. You'll find MP4 files with embedded subtitles in various languages, demonstrating the tool's transcription and translation capabilities.
 
 ## Notes
 
